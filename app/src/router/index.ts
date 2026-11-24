@@ -30,9 +30,34 @@ const router = createRouter({ history: createWebHistory(import.meta.env.BASE_URL
  *  3. Si el destino tiene meta.soloInvitados y ya hay sesión → redirigir a /tabs/equipos.
  *  Use to.matched para revisar también la ruta padre (/tabs/).
  */
+
 router.beforeEach(async (to) => {
-  void [to, useAuth];
-  // TODO [M3]
+  const { estaAutenticado, cargarToken } = useAuth();
+
+  // Recuperar la sesión antes de evaluar la ruta.
+  await cargarToken();
+
+  const requiereSesion = to.matched.some(
+    (ruta) => ruta.meta.requiereSesion === true
+  );
+
+  const soloInvitados = to.matched.some(
+    (ruta) => ruta.meta.soloInvitados === true
+  );
+
+  // Bloquear rutas privadas si no hay sesión.
+  if (requiereSesion && !estaAutenticado.value) {
+    return '/login';
+  }
+
+  // Evitar que un usuario autenticado vuelva al login.
+  if (soloInvitados && estaAutenticado.value) {
+    return '/tabs/equipos';
+  }
+
+  // Permitir la navegación.
+  return true;
 });
+
 
 export default router;
